@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>路径规划算法可视化学习 | Vue3</title>
-    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.22/vue.global.prod.min.js"></script>
+    <!-- Vue 3.4.27 稳定版 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.27/dist/vue.global.prod.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,7 +16,6 @@
         }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-        /* Header */
         .header {
             text-align: center;
             padding: 40px 20px;
@@ -32,7 +32,6 @@
         }
         .header p { color: #94a3b8; font-size: 1.1rem; }
 
-        /* Navigation */
         .nav-tabs {
             display: flex;
             justify-content: center;
@@ -58,7 +57,6 @@
         .nav-tab.active-compare { background: #10b98120; border-color: #10b981; color: #34d399; }
         .nav-tab.active-code { background: #ef444420; border-color: #ef4444; color: #f87171; }
 
-        /* Algorithm Card */
         .algo-card {
             background: #1e293b;
             border-radius: 16px;
@@ -71,7 +69,6 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .algo-card::before {
             content: '';
             display: block;
@@ -135,10 +132,7 @@
         .formula-box .var { color: #60a5fa; }
         .formula-box .comment { color: #64748b; font-style: italic; }
 
-        .principle-list {
-            list-style: none;
-            padding: 0;
-        }
+        .principle-list { list-style: none; padding: 0; }
         .principle-list li {
             padding: 10px 0;
             padding-left: 32px;
@@ -206,7 +200,6 @@
         .tag-green { background: #10b98120; color: #34d399; border: 1px solid #10b981; }
         .tag-red { background: #ef444420; color: #f87171; border: 1px solid #ef4444; }
 
-        /* Comparison Table */
         .comparison-table {
             width: 100%;
             border-collapse: collapse;
@@ -228,7 +221,6 @@
         }
         .comparison-table tr:hover td { background: #1e293b50; }
 
-        /* Code Block */
         .code-block {
             background: #0d1117;
             border: 1px solid #30363d;
@@ -246,7 +238,6 @@
         .code-block .comment { color: #8b949e; }
         .code-block .number { color: #79c0ff; }
 
-        /* Interactive Demo */
         .demo-section {
             background: #1e293b;
             border-radius: 16px;
@@ -268,6 +259,7 @@
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            color: #e2e8f0;
         }
         .demo-btn.astar-btn { border-color: #3b82f6; color: #60a5fa; }
         .demo-btn.astar-btn:hover { background: #3b82f620; }
@@ -289,7 +281,6 @@
             overflow: hidden;
         }
 
-        /* Grid for A* demo */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
@@ -306,7 +297,9 @@
             justify-content: center;
             font-size: 0.7rem;
             transition: all 0.3s;
+            cursor: pointer;
         }
+        .grid-cell:hover { opacity: 0.8; }
         .grid-cell.start { background: #10b981; }
         .grid-cell.goal { background: #ef4444; }
         .grid-cell.obstacle { background: #475569; }
@@ -314,7 +307,6 @@
         .grid-cell.closed { background: #60a5fa30; }
         .grid-cell.path { background: #fbbf24; }
 
-        /* PSO demo */
         .pso-particles {
             position: relative;
             width: 100%;
@@ -331,28 +323,29 @@
         .particle-best { background: #ef4444; width: 16px; height: 16px; }
         .particle-gbest { background: #10b981; width: 20px; height: 20px; border: 2px solid #34d399; }
 
-        /* Q-Learning demo */
         .ql-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 4px;
             padding: 20px;
+            width: 100%;
+            height: 100%;
         }
         .ql-cell {
             background: #1e293b;
             border-radius: 8px;
-            padding: 8px;
+            padding: 4px;
             text-align: center;
-            font-size: 0.75rem;
-            min-height: 60px;
+            font-size: 0.7rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            min-height: 50px;
         }
         .ql-cell.agent { background: #8b5cf640; border: 2px solid #a78bfa; }
         .ql-cell.goal { background: #10b98140; border: 2px solid #34d399; }
         .ql-cell.trap { background: #ef444440; border: 2px solid #f87171; }
-        .ql-qvalue { color: #a78bfa; font-size: 0.65rem; margin-top: 2px; }
+        .ql-qvalue { color: #a78bfa; font-size: 0.6rem; margin-top: 2px; line-height: 1.4; }
 
         @keyframes pulse {
             0%, 100% { opacity: 0.6; }
@@ -371,7 +364,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- Header -->
         <div class="header">
             <h1>🔥 路径规划算法可视化学习</h1>
             <p>A* 搜索算法 · 粒子群优化(PSO) · Q-Learning 强化学习</p>
@@ -385,15 +377,13 @@
                     v-for="tab in tabs" 
                     :key="tab.id"
                     class="nav-tab"
-                    :class="`active-${tab.id}`"
-                    :style="activeTab === tab.id ? {} : { opacity: 0.6 }"
+                    :class="activeTab === tab.id ? `active-${tab.id}` : ''"
                     @click="activeTab = tab.id"
                 >
                     {{ tab.icon }} {{ tab.name }}
                 </div>
             </div>
 
-            <!-- A* Content -->
             <transition name="fade" mode="out-in">
                 <div v-if="activeTab === 'astar'" key="astar">
                     <div class="algo-card astar-card">
@@ -447,7 +437,6 @@
                         </div>
                     </div>
 
-                    <!-- Interactive A* Demo -->
                     <div class="demo-section">
                         <h3 style="color:#60a5fa;margin-bottom:15px">🎮 交互演示：A* 路径搜索</h3>
                         <div class="demo-controls">
@@ -464,7 +453,7 @@
                                     :class="cell.type"
                                     @click="toggleObstacle(idx)"
                                 >
-                                    <span v-if="cell.f > 0 && cell.type !== 'obstacle'" style="font-size:0.6rem;color:#94a3b8">
+                                    <span v-if="cell.f > 0 && cell.type !== 'obstacle'" style="font-size:0.5rem;color:#94a3b8">
                                         f:{{ cell.f.toFixed(0) }}
                                     </span>
                                 </div>
@@ -476,7 +465,6 @@
                     </div>
                 </div>
 
-                <!-- PSO Content -->
                 <div v-else-if="activeTab === 'pso'" key="pso">
                     <div class="algo-card pso-card">
                         <div class="algo-title">
@@ -533,7 +521,6 @@
                         </div>
                     </div>
 
-                    <!-- Interactive PSO Demo -->
                     <div class="demo-section">
                         <h3 style="color:#fbbf24;margin-bottom:15px">🎮 交互演示：PSO 粒子寻优</h3>
                         <div class="demo-controls">
@@ -561,7 +548,6 @@
                     </div>
                 </div>
 
-                <!-- Q-Learning Content -->
                 <div v-else-if="activeTab === 'ql'" key="ql">
                     <div class="algo-card ql-card">
                         <div class="algo-title">
@@ -618,7 +604,6 @@
                         </div>
                     </div>
 
-                    <!-- Interactive Q-Learning Demo -->
                     <div class="demo-section">
                         <h3 style="color:#a78bfa;margin-bottom:15px">🎮 交互演示：Q-Learning 网格世界</h3>
                         <div class="demo-controls">
@@ -651,7 +636,6 @@
                     </div>
                 </div>
 
-                <!-- Comparison Content -->
                 <div v-else-if="activeTab === 'compare'" key="compare">
                     <div class="algo-card" style="border-top: 4px solid #10b981;">
                         <div class="algo-title">
@@ -769,7 +753,6 @@
                     </div>
                 </div>
 
-                <!-- Code Content -->
                 <div v-else-if="activeTab === 'code'" key="code">
                     <div class="algo-card" style="border-top: 4px solid #f472b6;">
                         <div class="algo-title">
@@ -882,7 +865,7 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
     </div>
 
     <script>
-        const { createApp, ref, reactive, computed, onMounted } = Vue;
+        const { createApp, ref, reactive, onMounted } = Vue;
 
         createApp({
             setup() {
@@ -896,17 +879,16 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                     { id: 'code', name: '伪代码', icon: '💻' }
                 ];
 
-                // A* Steps
+                // FIX 1: 使用模板字符串避免单引号冲突
                 const astarSteps = [
                     '从 <strong>Open List</strong> 取出 f(n) 最小的节点作为当前节点',
                     '若当前节点 = 终点，<strong>回溯路径</strong>，算法结束 ✓',
                     '将当前节点移入 <strong>Closed List</strong>（标记已访问）',
                     '遍历当前节点的<strong>所有邻居</strong>（上下左右/8邻域）',
-                    '计算邻居的 g' = g(当前) + 移动代价，若 g' < g(邻居) 则<strong>更新</strong>',
+                    `计算邻居的 g' = g(当前) + 移动代价，若 g' < g(邻居) 则<strong>更新</strong>`,
                     '将未访问邻居加入 <strong>Open List</strong>，重复步骤 1'
                 ];
 
-                // PSO Steps
                 const psoSteps = [
                     '<strong>初始化</strong>：随机生成N个粒子的位置和速度',
                     '计算每个粒子的<strong>适应度值</strong>（如路径长度+威胁代价）',
@@ -917,13 +899,12 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                     '若达到最大迭代次数或收敛精度，输出 <strong>gbest</strong> 为最优解'
                 ];
 
-                // Q-Learning Steps
                 const qlSteps = [
                     '<strong>初始化</strong>：随机初始化Q-Table（或全0），设置起始状态 s',
                     '用 <strong>ε-贪心策略</strong> 选动作：以ε概率随机探索，以1-ε概率选Q最大',
-                    '执行动作，观察<strong>奖励 r</strong> 和<strong>下一状态 s'</strong>',
-                    '按TD公式 <strong>更新 Q(s,a)</strong>：朝目标值 r+γ·maxQ(s',a') 移动一步',
-                    '状态转移：<strong>s ← s'</strong>，进入下一时间步',
+                    `执行动作，观察<strong>奖励 r</strong> 和<strong>下一状态 s'</strong>`,
+                    `按TD公式 <strong>更新 Q(s,a)</strong>：朝目标值 r+γ·maxQ(s',a') 移动一步`,
+                    `状态转移：<strong>s ← s'</strong>，进入下一时间步`,
                     '若到达终止状态（目标/碰撞），本Episode结束；否则回到步骤2',
                     '逐渐<strong>衰减 ε</strong>（如 ε ← ε·0.99），减少探索，增加利用'
                 ];
@@ -949,12 +930,10 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                             parent: null
                         });
                     }
-                    // Set start and goal
                     astarGrid[0].type = 'start';
                     astarGrid[0].g = 0;
                     astarGrid[99].type = 'goal';
 
-                    // Random obstacles
                     for (let i = 0; i < 15; i++) {
                         const idx = Math.floor(Math.random() * 100);
                         if (idx !== 0 && idx !== 99 && astarGrid[idx].type === '') {
@@ -989,15 +968,17 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                 }
 
                 function stepAstar() {
-                    if (astarFinished.value || astarOpenList.length === 0) return;
+                    // FIX 4: 无路可达时标记完成，防止卡住
+                    if (astarFinished.value || astarOpenList.length === 0) {
+                        if (astarOpenList.length === 0) astarFinished.value = true;
+                        return;
+                    }
 
-                    // Find node with min f
                     astarOpenList.sort((a, b) => astarGrid[a].f - astarGrid[b].f);
                     const current = astarOpenList.shift();
                     astarCurrent = current;
 
                     if (current === 99) {
-                        // Reconstruct path
                         let node = current;
                         while (node !== null) {
                             if (astarGrid[node].type !== 'start' && astarGrid[node].type !== 'goal') {
@@ -1083,7 +1064,6 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
 
                 function stepPso() {
                     psoIter.value++;
-                    // Simple attraction to center (simulated optimum)
                     const targetX = 50, targetY = 50;
 
                     particles.forEach(p => {
@@ -1099,7 +1079,6 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                         p.y = Math.max(5, Math.min(95, p.y));
                     });
 
-                    // Find best
                     let bestIdx = 0;
                     let bestDist = Infinity;
                     particles.forEach((p, i) => {
@@ -1145,16 +1124,19 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                 let qlQTable = [];
                 let qlInterval = null;
 
+                // FIX 3: 保存每个格子的原始类型，避免goal/trap被覆盖
+                const qlCellTypes = [];
+
                 function initQl() {
                     qlGrid.splice(0, qlGrid.length);
-                    qlQTable = Array(25).fill(null).map(() => [0, 0, 0, 0]); // 4 actions: up, down, left, right
+                    qlCellTypes.splice(0, qlCellTypes.length);
+                    qlQTable = Array(25).fill(null).map(() => [0, 0, 0, 0]);
 
                     for (let i = 0; i < 25; i++) {
-                        let type = '', label = '';
+                        let type = '', label = `${i}`;
                         if (i === 0) { type = 'agent'; label = '🤖'; }
                         else if (i === 24) { type = 'goal'; label = '🎯'; }
                         else if (i === 12 || i === 17) { type = 'trap'; label = '💀'; }
-                        else { label = `${i}`; }
 
                         qlGrid.push({
                             idx: i,
@@ -1162,6 +1144,7 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                             label: label,
                             qvalues: qlQTable[i]
                         });
+                        qlCellTypes.push({ type: type, label: label });
                     }
                     qlAgentPos = 0;
                     qlEpisode.value = 0;
@@ -1170,10 +1153,23 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                     qlTotalReward.value = 0;
                 }
 
+                function resetQlCell(idx) {
+                    // 恢复原始类型，不覆盖 goal 和 trap
+                    if (idx === 24) {
+                        qlGrid[idx].type = 'goal';
+                        qlGrid[idx].label = '🎯';
+                    } else if (idx === 12 || idx === 17) {
+                        qlGrid[idx].type = 'trap';
+                        qlGrid[idx].label = '💀';
+                    } else {
+                        qlGrid[idx].type = '';
+                        qlGrid[idx].label = `${idx}`;
+                    }
+                }
+
                 function stepQl() {
                     const state = qlAgentPos;
 
-                    // Epsilon-greedy
                     let action;
                     if (Math.random() < qlEpsilon.value) {
                         action = Math.floor(Math.random() * 4);
@@ -1181,7 +1177,6 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                         action = qlQTable[state].indexOf(Math.max(...qlQTable[state]));
                     }
 
-                    // Execute action
                     const x = state % 5, y = Math.floor(state / 5);
                     let nextX = x, nextY = y;
                     if (action === 0) nextY = Math.max(0, y - 1);
@@ -1191,20 +1186,17 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
 
                     const nextState = nextY * 5 + nextX;
 
-                    // Reward
-                    let reward = -0.1; // step cost
+                    let reward = -0.1;
                     let done = false;
                     if (nextState === 24) { reward = 10; done = true; }
                     else if (nextState === 12 || nextState === 17) { reward = -10; done = true; }
 
-                    // Q-update
                     const alpha = 0.1, gamma = 0.9;
                     const target = reward + gamma * Math.max(...qlQTable[nextState]);
                     qlQTable[state][action] += alpha * (target - qlQTable[state][action]);
 
-                    // Update grid display
-                    qlGrid[state].type = '';
-                    qlGrid[state].label = `${state}`;
+                    // FIX 3: 使用 resetQlCell 恢复原始类型
+                    resetQlCell(state);
                     qlGrid[nextState].type = 'agent';
                     qlGrid[nextState].label = '🤖';
 
@@ -1212,7 +1204,6 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                     qlStep.value++;
                     qlTotalReward.value += reward;
 
-                    // Update all qvalues display
                     for (let i = 0; i < 25; i++) {
                         qlGrid[i].qvalues = [...qlQTable[i]];
                     }
@@ -1224,8 +1215,7 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                         qlAgentPos = 0;
                         qlGrid[0].type = 'agent';
                         qlGrid[0].label = '🤖';
-                        qlGrid[24].type = 'goal';
-                        qlGrid[24].label = '🎯';
+                        resetQlCell(24);
                     }
                 }
 
@@ -1245,7 +1235,6 @@ policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">
                     initQl();
                 }
 
-                // Init
                 onMounted(() => {
                     initAstarGrid();
                     initPso();
