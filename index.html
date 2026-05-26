@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路径规划算法可视化学习 | Vue3</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid #334155;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .header p { color: #94a3b8; font-size: 1.1rem; }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .nav-tab {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .nav-tab:hover { background: #334155; color: #e2e8f0; }
+        .nav-tab.active-astar { background: #3b82f620; border-color: #3b82f6; color: #60a5fa; }
+        .nav-tab.active-pso { background: #f59e0b20; border-color: #f59e0b; color: #fbbf24; }
+        .nav-tab.active-ql { background: #8b5cf620; border-color: #8b5cf6; color: #a78bfa; }
+        .nav-tab.active-compare { background: #10b98120; border-color: #10b981; color: #34d399; }
+        .nav-tab.active-code { background: #ef444420; border-color: #ef4444; color: #f87171; }
+
+        /* Algorithm Card */
+        .algo-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #334155;
+            margin-bottom: 25px;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .algo-card::before {
+            content: '';
+            display: block;
+            height: 4px;
+            border-radius: 2px;
+            margin-bottom: 20px;
+        }
+        .astar-card::before { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+        .pso-card::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .ql-card::before { background: linear-gradient(90deg, #a78bfa, #8b5cf6); }
+
+        .algo-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .algo-subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin: 22px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        .astar-icon { background: #3b82f620; color: #60a5fa; }
+        .pso-icon { background: #f59e0b20; color: #fbbf24; }
+        .ql-icon { background: #8b5cf620; color: #a78bfa; }
+
+        .formula-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            overflow-x: auto;
+            line-height: 1.8;
+        }
+        .formula-box .highlight { color: #f472b6; font-weight: bold; }
+        .formula-box .var { color: #60a5fa; }
+        .formula-box .comment { color: #64748b; font-style: italic; }
+
+        .principle-list {
+            list-style: none;
+            padding: 0;
+        }
+        .principle-list li {
+            padding: 10px 0;
+            padding-left: 32px;
+            position: relative;
+            color: #cbd5e1;
+            font-size: 1rem;
+        }
+        .principle-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .astar-list li::before { color: #60a5fa; }
+        .pso-list li::before { color: #fbbf24; }
+        .ql-list li::before { color: #a78bfa; }
+
+        .iteration-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 18px 0;
+        }
+        .flow-step {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .flow-step:hover {
+            border-color: #475569;
+            transform: translateX(5px);
+        }
+        .step-num {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .astar-step { background: #3b82f630; color: #60a5fa; border: 1px solid #3b82f6; }
+        .pso-step { background: #f59e0b30; color: #fbbf24; border: 1px solid #f59e0b; }
+        .ql-step { background: #8b5cf630; color: #a78bfa; border: 1px solid #8b5cf6; }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 3px;
+        }
+        .tag-blue { background: #3b82f620; color: #60a5fa; border: 1px solid #3b82f6; }
+        .tag-yellow { background: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b; }
+        .tag-purple { background: #8b5cf620; color: #a78bfa; border: 1px solid #8b5cf6; }
+        .tag-green { background: #10b98120; color: #34d399; border: 1px solid #10b981; }
+        .tag-red { background: #ef444420; color: #f87171; border: 1px solid #ef4444; }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+        .comparison-table th {
+            background: #1e293b;
+            padding: 14px;
+            text-align: left;
+            border-bottom: 2px solid #334155;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .comparison-table td {
+            padding: 14px;
+            border-bottom: 1px solid #1e293b;
+            color: #cbd5e1;
+        }
+        .comparison-table tr:hover td { background: #1e293b50; }
+
+        /* Code Block */
+        .code-block {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'SF Mono', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.9;
+            overflow-x: auto;
+            margin: 18px 0;
+        }
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .function { color: #d2a8ff; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .comment { color: #8b949e; }
+        .code-block .number { color: #79c0ff; }
+
+        /* Interactive Demo */
+        .demo-section {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 28px;
+            margin-top: 25px;
+            border: 1px solid #334155;
+        }
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .demo-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .demo-btn.astar-btn { border-color: #3b82f6; color: #60a5fa; }
+        .demo-btn.astar-btn:hover { background: #3b82f620; }
+        .demo-btn.pso-btn { border-color: #f59e0b; color: #fbbf24; }
+        .demo-btn.pso-btn:hover { background: #f59e0b20; }
+        .demo-btn.ql-btn { border-color: #8b5cf6; color: #a78bfa; }
+        .demo-btn.ql-btn:hover { background: #8b5cf620; }
+
+        .demo-canvas {
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Grid for A* demo */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+        }
+        .grid-cell {
+            background: #1e293b;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+        }
+        .grid-cell.start { background: #10b981; }
+        .grid-cell.goal { background: #ef4444; }
+        .grid-cell.obstacle { background: #475569; }
+        .grid-cell.open { background: #3b82f640; animation: pulse 1s infinite; }
+        .grid-cell.closed { background: #60a5fa30; }
+        .grid-cell.path { background: #fbbf24; }
+
+        /* PSO demo */
+        .pso-particles {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .particle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.5s ease;
+        }
+        .particle-normal { background: #fbbf24; }
+        .particle-best { background: #ef4444; width: 16px; height: 16px; }
+        .particle-gbest { background: #10b981; width: 20px; height: 20px; border: 2px solid #34d399; }
+
+        /* Q-Learning demo */
+        .ql-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            padding: 20px;
+        }
+        .ql-cell {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .ql-cell.agent { background: #8b5cf640; border: 2px solid #a78bfa; }
+        .ql-cell.goal { background: #10b98140; border: 2px solid #34d399; }
+        .ql-cell.trap { background: #ef444440; border: 2px solid #f87171; }
+        .ql-qvalue { color: #a78bfa; font-size: 0.65rem; margin-top: 2px; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .algo-title { font-size: 1.4rem; }
+            .nav-tab { padding: 10px 16px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔥 路径规划算法可视化学习</h1>
+            <p>A* 搜索算法 · 粒子群优化(PSO) · Q-Learning 强化学习</p>
+            <p style="margin-top:8px;font-size:0.9rem;color:#64748b">基于 Vue 3 的交互式学习平台</p>
+        </div>
+
+        <div class="container">
+            <!-- Navigation -->
+            <div class="nav-tabs">
+                <div 
+                    v-for="tab in tabs" 
+                    :key="tab.id"
+                    class="nav-tab"
+                    :class="`active-${tab.id}`"
+                    :style="activeTab === tab.id ? {} : { opacity: 0.6 }"
+                    @click="activeTab = tab.id"
+                >
+                    {{ tab.icon }} {{ tab.name }}
+                </div>
+            </div>
+
+            <!-- A* Content -->
+            <transition name="fade" mode="out-in">
+                <div v-if="activeTab === 'astar'" key="astar">
+                    <div class="algo-card astar-card">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">🔵</span>
+                            A* 搜索算法
+                        </div>
+                        <div class="algo-subtitle">A-Star Search Algorithm — 最优启发式搜索</div>
+
+                        <div class="section-title">
+                            <span class="section-icon astar-icon">⚡</span>
+                            核心原理
+                        </div>
+                        <ul class="principle-list astar-list">
+                            <li>在网格/图中寻找<span class="highlight">最短路径</span>的启发式搜索算法</li>
+                            <li>结合<span class="highlight">实际代价</span>（从起点）和<span class="highlight">预估代价</span>（到终点）</li>
+                            <li>维护两个集合：Open List（待探索）和 Closed List（已探索）</li>
+                            <li>每次选择 <span class="highlight">f(n) 最小</span> 的节点扩展，保证最优性</li>
+                        </ul>
+
+                        <div class="section-title">
+                            <span class="section-icon astar-icon">🧮</span>
+                            核心公式
+                        </div>
+                        <div class="formula-box">
+                            <span class="highlight">f(n) = g(n) + h(n)</span>
+                            <br><br>
+                            <span class="var">g(n)</span> = 从起点到节点n的实际代价（已知）<br>
+                            <span class="var">h(n)</span> = 从节点n到终点的启发估计（启发函数）<br>
+                            <span class="var">f(n)</span> = 经过n的最优路径总代价估计<br><br>
+                            <span class="comment">// 常用启发函数：欧氏距离、曼哈顿距离、对角距离</span><br>
+                            <span class="var">h(n)</span> = √[(xₙ-x₉)² + (yₙ-y₉)²]  <span class="comment">// 欧氏距离</span>
+                        </div>
+
+                        <div class="section-title">
+                            <span class="section-icon astar-icon">🔄</span>
+                            迭代流程（每一步）
+                        </div>
+                        <div class="iteration-flow">
+                            <div v-for="(step, i) in astarSteps" :key="i" class="flow-step">
+                                <span class="step-num astar-step">{{ i+1 }}</span>
+                                <div v-html="step"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:15px">
+                            <span class="tag tag-blue">确定性</span>
+                            <span class="tag tag-blue">最优性保证</span>
+                            <span class="tag tag-blue">完备性</span>
+                            <span class="tag tag-red">维度灾难</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive A* Demo -->
+                    <div class="demo-section">
+                        <h3 style="color:#60a5fa;margin-bottom:15px">🎮 交互演示：A* 路径搜索</h3>
+                        <div class="demo-controls">
+                            <button class="demo-btn astar-btn" @click="resetAstar">🔄 重置地图</button>
+                            <button class="demo-btn astar-btn" @click="stepAstar" :disabled="astarFinished">▶️ 单步执行</button>
+                            <button class="demo-btn astar-btn" @click="runAstar">⏩ 自动运行</button>
+                        </div>
+                        <div class="demo-canvas">
+                            <div class="grid-container">
+                                <div 
+                                    v-for="(cell, idx) in astarGrid" 
+                                    :key="idx"
+                                    class="grid-cell"
+                                    :class="cell.type"
+                                    @click="toggleObstacle(idx)"
+                                >
+                                    <span v-if="cell.f > 0 && cell.type !== 'obstacle'" style="font-size:0.6rem;color:#94a3b8">
+                                        f:{{ cell.f.toFixed(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-top:10px;color:#64748b;font-size:0.85rem">
+                            💡 点击格子可切换障碍物，绿色=起点，红色=终点，蓝色=Open List，浅蓝=Closed List，黄色=最终路径
+                        </p>
+                    </div>
+                </div>
+
+                <!-- PSO Content -->
+                <div v-else-if="activeTab === 'pso'" key="pso">
+                    <div class="algo-card pso-card">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">🟡</span>
+                            粒子群优化 (PSO)
+                        </div>
+                        <div class="algo-subtitle">Particle Swarm Optimization — 群体智能优化</div>
+
+                        <div class="section-title">
+                            <span class="section-icon pso-icon">⚡</span>
+                            核心原理
+                        </div>
+                        <ul class="principle-list pso-list">
+                            <li>模拟鸟群/鱼群<span class="highlight">群体觅食行为</span>的元启发式算法</li>
+                            <li>每个"粒子"代表解空间中的一个<span class="highlight">候选解</span></li>
+                            <li>粒子通过跟踪<span class="highlight">个体最优(pbest)</span>和<span class="highlight">全局最优(gbest)</span>更新</li>
+                            <li>适用于连续空间优化，如无人机三维路径规划</li>
+                        </ul>
+
+                        <div class="section-title">
+                            <span class="section-icon pso-icon">🧮</span>
+                            核心公式
+                        </div>
+                        <div class="formula-box">
+                            <span class="comment">// 速度更新公式（核心）</span><br>
+                            <span class="highlight">vᵢ(t+1) = w·vᵢ(t) + c₁r₁·(pbestᵢ - xᵢ) + c₂r₂·(gbest - xᵢ)</span>
+                            <br><br>
+                            <span class="comment">// 位置更新公式</span><br>
+                            <span class="highlight">xᵢ(t+1) = xᵢ(t) + vᵢ(t+1)</span>
+                            <br><br>
+                            <span class="var">w</span> = 惯性权重（控制探索/开发平衡）<br>
+                            <span class="var">c₁, c₂</span> = 学习因子（个体/社会认知系数）<br>
+                            <span class="var">r₁, r₂</span> = [0,1] 随机数<br>
+                            <span class="var">pbestᵢ</span> = 粒子i的历史最优位置<br>
+                            <span class="var">gbest</span> = 整个种群的历史最优位置
+                        </div>
+
+                        <div class="section-title">
+                            <span class="section-icon pso-icon">🔄</span>
+                            迭代流程（每一代）
+                        </div>
+                        <div class="iteration-flow">
+                            <div v-for="(step, i) in psoSteps" :key="i" class="flow-step">
+                                <span class="step-num pso-step">{{ i+1 }}</span>
+                                <div v-html="step"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:15px">
+                            <span class="tag tag-yellow">连续空间</span>
+                            <span class="tag tag-yellow">群体智能</span>
+                            <span class="tag tag-green">易并行</span>
+                            <span class="tag tag-red">可能陷入局部最优</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive PSO Demo -->
+                    <div class="demo-section">
+                        <h3 style="color:#fbbf24;margin-bottom:15px">🎮 交互演示：PSO 粒子寻优</h3>
+                        <div class="demo-controls">
+                            <button class="demo-btn pso-btn" @click="resetPso">🔄 重置粒子</button>
+                            <button class="demo-btn pso-btn" @click="stepPso">▶️ 迭代一步</button>
+                            <button class="demo-btn pso-btn" @click="runPso">⏩ 自动优化</button>
+                        </div>
+                        <div class="demo-canvas">
+                            <div class="pso-particles">
+                                <div 
+                                    v-for="(p, i) in particles" 
+                                    :key="i"
+                                    class="particle"
+                                    :class="p.type"
+                                    :style="{ left: p.x + '%', top: p.y + '%' }"
+                                ></div>
+                                <div style="position:absolute;bottom:10px;left:10px;color:#64748b;font-size:0.8rem">
+                                    迭代次数: {{ psoIter }} | 最优适应度: {{ psoBestFitness.toFixed(2) }}
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-top:10px;color:#64748b;font-size:0.85rem">
+                            💡 黄色=普通粒子，红色=个体最优，绿色=全局最优。粒子向最优位置聚集。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Q-Learning Content -->
+                <div v-else-if="activeTab === 'ql'" key="ql">
+                    <div class="algo-card ql-card">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">🟣</span>
+                            Q-Learning 强化学习
+                        </div>
+                        <div class="algo-subtitle">Model-Free RL — 无模型时序差分学习</div>
+
+                        <div class="section-title">
+                            <span class="section-icon ql-icon">⚡</span>
+                            核心原理
+                        </div>
+                        <ul class="principle-list ql-list">
+                            <li><span class="highlight">无模型(Model-Free)</span>：不需要知道环境转移概率</li>
+                            <li>维护一张 <span class="highlight">Q-Table</span>：状态-动作值函数 Q(s,a)</li>
+                            <li>通过<span class="highlight">试错探索</span>学习最优策略（ε-贪心策略）</li>
+                            <li>利用 <span class="highlight">时序差分(TD)</span> 更新：用下一步估计修正当前估计</li>
+                            <li>最终策略：每个状态选择 Q值最大的动作</li>
+                        </ul>
+
+                        <div class="section-title">
+                            <span class="section-icon ql-icon">🧮</span>
+                            核心公式
+                        </div>
+                        <div class="formula-box">
+                            <span class="comment">// Q值更新（Bellman方程的TD实现）</span><br>
+                            <span class="highlight">Q(s,a) ← Q(s,a) + α · [r + γ·maxQ(s',a') - Q(s,a)]</span>
+                            <br><br>
+                            <span class="var">α</span> = 学习率 (0~1)，控制新信息覆盖旧信息的程度<br>
+                            <span class="var">γ</span> = 折扣因子 (0~1)，未来奖励的衰减系数<br>
+                            <span class="var">r</span> = 执行动作a后获得的即时奖励<br>
+                            <span class="var">s'</span> = 执行动作a后转移到的下一状态<br>
+                            <span class="var">maxQ(s',a')</span> = 下一状态所有动作中的最大Q值<br><br>
+                            <span class="comment">// ε-贪心策略（探索 vs 利用）</span><br>
+                            <span class="highlight">以 ε 概率随机选动作（探索），以 1-ε 概率选Q最大动作（利用）</span>
+                        </div>
+
+                        <div class="section-title">
+                            <span class="section-icon ql-icon">🔄</span>
+                            迭代流程（每个Episode）
+                        </div>
+                        <div class="iteration-flow">
+                            <div v-for="(step, i) in qlSteps" :key="i" class="flow-step">
+                                <span class="step-num ql-step">{{ i+1 }}</span>
+                                <div v-html="step"></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:15px">
+                            <span class="tag tag-purple">无模型</span>
+                            <span class="tag tag-purple">在线学习</span>
+                            <span class="tag tag-green">可处理随机环境</span>
+                            <span class="tag tag-red">状态空间大时Q-Table爆炸</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Q-Learning Demo -->
+                    <div class="demo-section">
+                        <h3 style="color:#a78bfa;margin-bottom:15px">🎮 交互演示：Q-Learning 网格世界</h3>
+                        <div class="demo-controls">
+                            <button class="demo-btn ql-btn" @click="resetQl">🔄 重置环境</button>
+                            <button class="demo-btn ql-btn" @click="stepQl">▶️ 执行动作</button>
+                            <button class="demo-btn ql-btn" @click="runQl">⏩ 自动训练</button>
+                        </div>
+                        <div class="demo-canvas">
+                            <div class="ql-grid">
+                                <div 
+                                    v-for="(cell, idx) in qlGrid" 
+                                    :key="idx"
+                                    class="ql-cell"
+                                    :class="cell.type"
+                                >
+                                    <div>{{ cell.label }}</div>
+                                    <div class="ql-qvalue" v-if="cell.qvalues">
+                                        ↑{{ cell.qvalues[0].toFixed(1) }} ↓{{ cell.qvalues[1].toFixed(1) }}<br>
+                                        ←{{ cell.qvalues[2].toFixed(1) }} →{{ cell.qvalues[3].toFixed(1) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="margin-top:10px;color:#64748b;font-size:0.85rem">
+                            💡 紫色边框=智能体位置，绿色=目标(奖励+10)，红色=陷阱(奖励-10)。Q值显示四个方向的估计值。
+                        </p>
+                        <div style="margin-top:10px;color:#94a3b8;font-size:0.85rem">
+                            Episode: {{ qlEpisode }} | Step: {{ qlStep }} | Epsilon: {{ qlEpsilon.toFixed(3) }} | Total Reward: {{ qlTotalReward }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Content -->
+                <div v-else-if="activeTab === 'compare'" key="compare">
+                    <div class="algo-card" style="border-top: 4px solid #10b981;">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">📊</span>
+                            三种算法核心对比
+                        </div>
+                        <div class="algo-subtitle">Comparison of A*, PSO, and Q-Learning</div>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>维度</th>
+                                    <th style="color:#60a5fa">A* 搜索</th>
+                                    <th style="color:#fbbf24">PSO 粒子群</th>
+                                    <th style="color:#a78bfa">Q-Learning</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>算法类型</strong></td>
+                                    <td>图搜索 / 启发式搜索</td>
+                                    <td>群体智能 / 元启发式</td>
+                                    <td>强化学习 / 时序差分</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>是否需要环境模型</strong></td>
+                                    <td>需要（图/网格结构）</td>
+                                    <td>不需要（黑箱优化）</td>
+                                    <td>不需要（Model-Free）</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>解空间</strong></td>
+                                    <td>离散（网格节点）</td>
+                                    <td>连续（实数向量）</td>
+                                    <td>离散（状态-动作对）</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>核心迭代对象</strong></td>
+                                    <td>节点扩展（Open/Closed List）</td>
+                                    <td>粒子位置/速度更新</td>
+                                    <td>Q-Table值更新（TD）</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>最优性保证</strong></td>
+                                    <td>✅ 启发函数可采纳时保证最优</td>
+                                    <td>❌ 不保证全局最优（可能局部最优）</td>
+                                    <td>✅ 充分探索后收敛到最优策略</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>适用场景</strong></td>
+                                    <td>已知地图的静态最短路径</td>
+                                    <td>连续空间多目标优化</td>
+                                    <td>未知环境的序列决策</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>计算瓶颈</strong></td>
+                                    <td>Open List排序（高维时指数爆炸）</td>
+                                    <td>适应度函数评估次数</td>
+                                    <td>状态空间维度（Q-Table大小）</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>对无人机的意义</strong></td>
+                                    <td>静态地图全局路径规划</td>
+                                    <td>三维路径点优化（平滑+避障）</td>
+                                    <td>动态环境下的实时避障决策</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="algo-card" style="border-top: 4px solid #ef4444; margin-top: 25px;">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">🚁</span>
+                            在无人机路径规划中的应用方式
+                        </div>
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>算法</th>
+                                    <th>典型应用</th>
+                                    <th>优势</th>
+                                    <th>局限</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="color:#60a5fa;font-weight:bold">A*</td>
+                                    <td>已知地图的全局路径规划；栅格地图最短路径；作为基准对比</td>
+                                    <td>保证最优；逻辑清晰；实现简单</td>
+                                    <td>高维空间计算量大；无法处理动态障碍；路径不够平滑</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:#fbbf24;font-weight:bold">PSO</td>
+                                    <td>三维路径点优化；多目标优化（长度+威胁+能耗）；与A*结合做后处理平滑</td>
+                                    <td>连续空间优化强；并行计算；易处理多目标</td>
+                                    <td>可能陷入局部最优；参数敏感；收敛速度不稳定</td>
+                                </tr>
+                                <tr>
+                                    <td style="color:#a78bfa;font-weight:bold">Q-Learning</td>
+                                    <td>动态环境下的实时避障；未知环境中的探索-利用决策；与A*结合的动态重规划</td>
+                                    <td>无需环境模型；自适应学习；可处理随机性</td>
+                                    <td>状态空间大时Q-Table爆炸；训练时间长；初期探索效率低</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="text-align:center;margin:30px 0;padding:20px;background:#1e293b;border-radius:12px;border:1px solid #334155;">
+                        <p style="color:#94a3b8;font-size:1.1rem">💡 三种算法可以组合使用！</p>
+                        <p style="color:#cbd5e1;margin-top:10px">
+                            <span style="color:#60a5fa">A*</span> 生成初始路径 → 
+                            <span style="color:#fbbf24">PSO</span> 优化路径平滑度 → 
+                            <span style="color:#a78bfa">Q-Learning</span> 处理动态避障
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Code Content -->
+                <div v-else-if="activeTab === 'code'" key="code">
+                    <div class="algo-card" style="border-top: 4px solid #f472b6;">
+                        <div class="algo-title">
+                            <span style="font-size:2.2rem">💻</span>
+                            伪代码速览
+                        </div>
+                        <div class="algo-subtitle">Pseudocode for Quick Reference</div>
+
+                        <h3 style="color:#60a5fa;margin:25px 0 15px">A* 算法伪代码</h3>
+                        <div class="code-block">
+<span class="comment"># 初始化</span>
+<span class="keyword">open_list</span> = [start_node]      <span class="comment"># 优先队列，按f值排序</span>
+<span class="keyword">closed_list</span> = []                <span class="comment"># 已访问集合</span>
+<span class="keyword">g</span>[start] = <span class="number">0</span>
+<span class="keyword">f</span>[start] = <span class="function">heuristic</span>(start, goal)
+
+<span class="keyword">while</span> open_list <span class="keyword">not</span> empty:
+    current = <span class="function">pop_min_f</span>(open_list)    <span class="comment"># 取出f最小的节点</span>
+    <span class="keyword">if</span> current == goal:
+        <span class="keyword">return</span> <span class="function">reconstruct_path</span>(current)  <span class="comment"># 回溯路径</span>
+
+    closed_list.<span class="function">add</span>(current)
+
+    <span class="keyword">for</span> neighbor <span class="keyword">in</span> <span class="function">get_neighbors</span>(current):
+        <span class="keyword">if</span> neighbor <span class="keyword">in</span> closed_list: <span class="keyword">continue</span>
+
+        tentative_g = g[current] + <span class="function">cost</span>(current, neighbor)
+
+        <span class="keyword">if</span> tentative_g < g[neighbor] <span class="keyword">or</span> neighbor <span class="keyword">not in</span> open_list:
+            g[neighbor] = tentative_g
+            f[neighbor] = g[neighbor] + <span class="function">heuristic</span>(neighbor, goal)
+            neighbor.parent = current
+            <span class="keyword">if</span> neighbor <span class="keyword">not in</span> open_list:
+                open_list.<span class="function">push</span>(neighbor)
+                        </div>
+
+                        <h3 style="color:#fbbf24;margin:25px 0 15px">PSO 算法伪代码</h3>
+                        <div class="code-block">
+<span class="comment"># 初始化粒子群</span>
+<span class="keyword">for</span> i = <span class="number">1</span> to N:
+    particle[i].position = <span class="function">random</span>(bounds)
+    particle[i].velocity = <span class="function">random</span>(v_max)
+    particle[i].pbest = particle[i].position
+    particle[i].pbest_fitness = <span class="function">fitness</span>(particle[i].position)
+
+gbest = <span class="function">argmax</span>(pbest_fitness)
+
+<span class="comment"># 迭代优化</span>
+<span class="keyword">for</span> iter = <span class="number">1</span> to max_iter:
+    <span class="keyword">for</span> i = <span class="number">1</span> to N:
+        <span class="comment"># 速度更新（惯性 + 个体认知 + 社会认知）</span>
+        v[i] = w * v[i] 
+             + c1 * <span class="function">rand</span>() * (pbest[i] - x[i])
+             + c2 * <span class="function">rand</span>() * (gbest - x[i])
+
+        <span class="comment"># 位置更新</span>
+        x[i] = x[i] + v[i]
+        x[i] = <span class="function">clip</span>(x[i], bounds)   <span class="comment"># 边界约束</span>
+
+        <span class="comment"># 更新个体最优</span>
+        <span class="keyword">if</span> <span class="function">fitness</span>(x[i]) < particle[i].pbest_fitness:
+            particle[i].pbest = x[i]
+            particle[i].pbest_fitness = <span class="function">fitness</span>(x[i])
+
+            <span class="comment"># 更新全局最优</span>
+            <span class="keyword">if</span> particle[i].pbest_fitness < gbest_fitness:
+                gbest = particle[i].pbest
+
+    w = w * <span class="number">0.99</span>   <span class="comment"># 惯性权重衰减</span>
+                        </div>
+
+                        <h3 style="color:#a78bfa;margin:25px 0 15px">Q-Learning 算法伪代码</h3>
+                        <div class="code-block">
+<span class="comment"># 初始化Q-Table（状态数 × 动作数）</span>
+Q = <span class="function">zeros</span>(num_states, num_actions)
+epsilon = <span class="number">1.0</span>       <span class="comment"># 初始探索率</span>
+alpha = <span class="number">0.1</span>         <span class="comment"># 学习率</span>
+gamma = <span class="number">0.9</span>         <span class="comment"># 折扣因子</span>
+
+<span class="comment"># 训练多个Episode</span>
+<span class="keyword">for</span> episode = <span class="number">1</span> to max_episodes:
+    state = <span class="function">env.reset</span>()           <span class="comment"># 重置环境到初始状态</span>
+    done = <span class="keyword">False</span>
+
+    <span class="keyword">while not</span> done:
+        <span class="comment"># ε-贪心策略选择动作</span>
+        <span class="keyword">if</span> <span class="function">random</span>() < epsilon:
+            action = <span class="function">random_action</span>()    <span class="comment"># 探索：随机选</span>
+        <span class="keyword">else</span>:
+            action = <span class="function">argmax</span>(Q[state, :]) <span class="comment"># 利用：选Q最大</span>
+
+        <span class="comment"># 执行动作，观察转移</span>
+        next_state, reward, done = <span class="function">env.step</span>(action)
+
+        <span class="comment"># TD更新：朝目标值移动一步</span>
+        target = reward + gamma * <span class="function">max</span>(Q[next_state, :])
+        Q[state, action] += alpha * (target - Q[state, action])
+
+        state = next_state
+
+    epsilon *= <span class="number">0.995</span>   <span class="comment"># 逐渐降低探索率</span>
+
+<span class="comment"># 最终策略：每个状态选Q值最大的动作</span>
+policy[s] = <span class="function">argmax</span>(Q[s, :]) <span class="keyword">for all</span> s
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const activeTab = ref('astar');
+
+                const tabs = [
+                    { id: 'astar', name: 'A* 搜索', icon: '🔵' },
+                    { id: 'pso', name: 'PSO 优化', icon: '🟡' },
+                    { id: 'ql', name: 'Q-Learning', icon: '🟣' },
+                    { id: 'compare', name: '对比总结', icon: '📊' },
+                    { id: 'code', name: '伪代码', icon: '💻' }
+                ];
+
+                // A* Steps
+                const astarSteps = [
+                    '从 <strong>Open List</strong> 取出 f(n) 最小的节点作为当前节点',
+                    '若当前节点 = 终点，<strong>回溯路径</strong>，算法结束 ✓',
+                    '将当前节点移入 <strong>Closed List</strong>（标记已访问）',
+                    '遍历当前节点的<strong>所有邻居</strong>（上下左右/8邻域）',
+                    '计算邻居的 g' = g(当前) + 移动代价，若 g' < g(邻居) 则<strong>更新</strong>',
+                    '将未访问邻居加入 <strong>Open List</strong>，重复步骤 1'
+                ];
+
+                // PSO Steps
+                const psoSteps = [
+                    '<strong>初始化</strong>：随机生成N个粒子的位置和速度',
+                    '计算每个粒子的<strong>适应度值</strong>（如路径长度+威胁代价）',
+                    '更新每个粒子的 <strong>pbest</strong>（若当前更优）',
+                    '更新种群的 <strong>gbest</strong>（所有pbest中的最优）',
+                    '按速度公式<strong>更新所有粒子速度</strong>（惯性+个体认知+社会认知）',
+                    '按位置公式<strong>更新所有粒子位置</strong>，检查边界约束',
+                    '若达到最大迭代次数或收敛精度，输出 <strong>gbest</strong> 为最优解'
+                ];
+
+                // Q-Learning Steps
+                const qlSteps = [
+                    '<strong>初始化</strong>：随机初始化Q-Table（或全0），设置起始状态 s',
+                    '用 <strong>ε-贪心策略</strong> 选动作：以ε概率随机探索，以1-ε概率选Q最大',
+                    '执行动作，观察<strong>奖励 r</strong> 和<strong>下一状态 s'</strong>',
+                    '按TD公式 <strong>更新 Q(s,a)</strong>：朝目标值 r+γ·maxQ(s',a') 移动一步',
+                    '状态转移：<strong>s ← s'</strong>，进入下一时间步',
+                    '若到达终止状态（目标/碰撞），本Episode结束；否则回到步骤2',
+                    '逐渐<strong>衰减 ε</strong>（如 ε ← ε·0.99），减少探索，增加利用'
+                ];
+
+                // ==================== A* Interactive Demo ====================
+                const GRID_SIZE = 10;
+                const astarGrid = reactive([]);
+                const astarFinished = ref(false);
+                let astarOpenList = [];
+                let astarClosedList = new Set();
+                let astarCurrent = null;
+                let astarPath = [];
+
+                function initAstarGrid() {
+                    astarGrid.splice(0, astarGrid.length);
+                    for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                        astarGrid.push({
+                            idx: i,
+                            type: '',
+                            g: Infinity,
+                            h: 0,
+                            f: 0,
+                            parent: null
+                        });
+                    }
+                    // Set start and goal
+                    astarGrid[0].type = 'start';
+                    astarGrid[0].g = 0;
+                    astarGrid[99].type = 'goal';
+
+                    // Random obstacles
+                    for (let i = 0; i < 15; i++) {
+                        const idx = Math.floor(Math.random() * 100);
+                        if (idx !== 0 && idx !== 99 && astarGrid[idx].type === '') {
+                            astarGrid[idx].type = 'obstacle';
+                        }
+                    }
+
+                    astarOpenList = [0];
+                    astarClosedList = new Set();
+                    astarCurrent = null;
+                    astarPath = [];
+                    astarFinished.value = false;
+                }
+
+                function heuristic(idx, goalIdx) {
+                    const x1 = idx % GRID_SIZE, y1 = Math.floor(idx / GRID_SIZE);
+                    const x2 = goalIdx % GRID_SIZE, y2 = Math.floor(goalIdx / GRID_SIZE);
+                    return Math.sqrt((x1-x2)**2 + (y1-y2)**2);
+                }
+
+                function getNeighbors(idx) {
+                    const neighbors = [];
+                    const x = idx % GRID_SIZE, y = Math.floor(idx / GRID_SIZE);
+                    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                    for (const [dx, dy] of dirs) {
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+                            neighbors.push(ny * GRID_SIZE + nx);
+                        }
+                    }
+                    return neighbors;
+                }
+
+                function stepAstar() {
+                    if (astarFinished.value || astarOpenList.length === 0) return;
+
+                    // Find node with min f
+                    astarOpenList.sort((a, b) => astarGrid[a].f - astarGrid[b].f);
+                    const current = astarOpenList.shift();
+                    astarCurrent = current;
+
+                    if (current === 99) {
+                        // Reconstruct path
+                        let node = current;
+                        while (node !== null) {
+                            if (astarGrid[node].type !== 'start' && astarGrid[node].type !== 'goal') {
+                                astarGrid[node].type = 'path';
+                            }
+                            node = astarGrid[node].parent;
+                        }
+                        astarFinished.value = true;
+                        return;
+                    }
+
+                    if (astarGrid[current].type !== 'start') {
+                        astarGrid[current].type = 'closed';
+                    }
+                    astarClosedList.add(current);
+
+                    for (const neighbor of getNeighbors(current)) {
+                        if (astarClosedList.has(neighbor) || astarGrid[neighbor].type === 'obstacle') continue;
+
+                        const tentativeG = astarGrid[current].g + 1;
+
+                        if (tentativeG < astarGrid[neighbor].g || !astarOpenList.includes(neighbor)) {
+                            astarGrid[neighbor].g = tentativeG;
+                            astarGrid[neighbor].h = heuristic(neighbor, 99);
+                            astarGrid[neighbor].f = tentativeG + astarGrid[neighbor].h;
+                            astarGrid[neighbor].parent = current;
+
+                            if (!astarOpenList.includes(neighbor)) {
+                                astarOpenList.push(neighbor);
+                                if (astarGrid[neighbor].type !== 'goal') {
+                                    astarGrid[neighbor].type = 'open';
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let astarInterval = null;
+                function runAstar() {
+                    if (astarInterval) clearInterval(astarInterval);
+                    astarInterval = setInterval(() => {
+                        if (astarFinished.value) {
+                            clearInterval(astarInterval);
+                            return;
+                        }
+                        stepAstar();
+                    }, 200);
+                }
+
+                function resetAstar() {
+                    if (astarInterval) clearInterval(astarInterval);
+                    initAstarGrid();
+                }
+
+                function toggleObstacle(idx) {
+                    if (astarGrid[idx].type === 'obstacle') {
+                        astarGrid[idx].type = '';
+                    } else if (astarGrid[idx].type === '') {
+                        astarGrid[idx].type = 'obstacle';
+                    }
+                }
+
+                // ==================== PSO Interactive Demo ====================
+                const particles = reactive([]);
+                const psoIter = ref(0);
+                const psoBestFitness = ref(0);
+                let psoInterval = null;
+
+                function initPso() {
+                    particles.splice(0, particles.length);
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: Math.random() * 90 + 5,
+                            y: Math.random() * 90 + 5,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            type: 'particle-normal'
+                        });
+                    }
+                    psoIter.value = 0;
+                    psoBestFitness.value = 0;
+                }
+
+                function stepPso() {
+                    psoIter.value++;
+                    // Simple attraction to center (simulated optimum)
+                    const targetX = 50, targetY = 50;
+
+                    particles.forEach(p => {
+                        const dx = targetX - p.x;
+                        const dy = targetY - p.y;
+                        p.vx += dx * 0.02 + (Math.random() - 0.5) * 0.5;
+                        p.vy += dy * 0.02 + (Math.random() - 0.5) * 0.5;
+                        p.vx *= 0.9;
+                        p.vy *= 0.9;
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.x = Math.max(5, Math.min(95, p.x));
+                        p.y = Math.max(5, Math.min(95, p.y));
+                    });
+
+                    // Find best
+                    let bestIdx = 0;
+                    let bestDist = Infinity;
+                    particles.forEach((p, i) => {
+                        const dist = Math.sqrt((p.x-targetX)**2 + (p.y-targetY)**2);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestIdx = i;
+                        }
+                    });
+
+                    particles.forEach((p, i) => {
+                        if (i === bestIdx) p.type = 'particle-gbest';
+                        else if (Math.random() < 0.3) p.type = 'particle-best';
+                        else p.type = 'particle-normal';
+                    });
+
+                    psoBestFitness.value = 100 - bestDist;
+                }
+
+                function runPso() {
+                    if (psoInterval) clearInterval(psoInterval);
+                    psoInterval = setInterval(() => {
+                        if (psoIter.value >= 100) {
+                            clearInterval(psoInterval);
+                            return;
+                        }
+                        stepPso();
+                    }, 100);
+                }
+
+                function resetPso() {
+                    if (psoInterval) clearInterval(psoInterval);
+                    initPso();
+                }
+
+                // ==================== Q-Learning Interactive Demo ====================
+                const qlGrid = reactive([]);
+                const qlEpisode = ref(0);
+                const qlStep = ref(0);
+                const qlEpsilon = ref(1.0);
+                const qlTotalReward = ref(0);
+                let qlAgentPos = 0;
+                let qlQTable = [];
+                let qlInterval = null;
+
+                function initQl() {
+                    qlGrid.splice(0, qlGrid.length);
+                    qlQTable = Array(25).fill(null).map(() => [0, 0, 0, 0]); // 4 actions: up, down, left, right
+
+                    for (let i = 0; i < 25; i++) {
+                        let type = '', label = '';
+                        if (i === 0) { type = 'agent'; label = '🤖'; }
+                        else if (i === 24) { type = 'goal'; label = '🎯'; }
+                        else if (i === 12 || i === 17) { type = 'trap'; label = '💀'; }
+                        else { label = `${i}`; }
+
+                        qlGrid.push({
+                            idx: i,
+                            type: type,
+                            label: label,
+                            qvalues: qlQTable[i]
+                        });
+                    }
+                    qlAgentPos = 0;
+                    qlEpisode.value = 0;
+                    qlStep.value = 0;
+                    qlEpsilon.value = 1.0;
+                    qlTotalReward.value = 0;
+                }
+
+                function stepQl() {
+                    const state = qlAgentPos;
+
+                    // Epsilon-greedy
+                    let action;
+                    if (Math.random() < qlEpsilon.value) {
+                        action = Math.floor(Math.random() * 4);
+                    } else {
+                        action = qlQTable[state].indexOf(Math.max(...qlQTable[state]));
+                    }
+
+                    // Execute action
+                    const x = state % 5, y = Math.floor(state / 5);
+                    let nextX = x, nextY = y;
+                    if (action === 0) nextY = Math.max(0, y - 1);
+                    else if (action === 1) nextY = Math.min(4, y + 1);
+                    else if (action === 2) nextX = Math.max(0, x - 1);
+                    else if (action === 3) nextX = Math.min(4, x + 1);
+
+                    const nextState = nextY * 5 + nextX;
+
+                    // Reward
+                    let reward = -0.1; // step cost
+                    let done = false;
+                    if (nextState === 24) { reward = 10; done = true; }
+                    else if (nextState === 12 || nextState === 17) { reward = -10; done = true; }
+
+                    // Q-update
+                    const alpha = 0.1, gamma = 0.9;
+                    const target = reward + gamma * Math.max(...qlQTable[nextState]);
+                    qlQTable[state][action] += alpha * (target - qlQTable[state][action]);
+
+                    // Update grid display
+                    qlGrid[state].type = '';
+                    qlGrid[state].label = `${state}`;
+                    qlGrid[nextState].type = 'agent';
+                    qlGrid[nextState].label = '🤖';
+
+                    qlAgentPos = nextState;
+                    qlStep.value++;
+                    qlTotalReward.value += reward;
+
+                    // Update all qvalues display
+                    for (let i = 0; i < 25; i++) {
+                        qlGrid[i].qvalues = [...qlQTable[i]];
+                    }
+
+                    if (done) {
+                        qlEpisode.value++;
+                        qlStep.value = 0;
+                        qlEpsilon.value *= 0.995;
+                        qlAgentPos = 0;
+                        qlGrid[0].type = 'agent';
+                        qlGrid[0].label = '🤖';
+                        qlGrid[24].type = 'goal';
+                        qlGrid[24].label = '🎯';
+                    }
+                }
+
+                function runQl() {
+                    if (qlInterval) clearInterval(qlInterval);
+                    qlInterval = setInterval(() => {
+                        if (qlEpisode.value >= 200) {
+                            clearInterval(qlInterval);
+                            return;
+                        }
+                        stepQl();
+                    }, 50);
+                }
+
+                function resetQl() {
+                    if (qlInterval) clearInterval(qlInterval);
+                    initQl();
+                }
+
+                // Init
+                onMounted(() => {
+                    initAstarGrid();
+                    initPso();
+                    initQl();
+                });
+
+                return {
+                    activeTab,
+                    tabs,
+                    astarSteps,
+                    psoSteps,
+                    qlSteps,
+                    astarGrid,
+                    astarFinished,
+                    stepAstar,
+                    runAstar,
+                    resetAstar,
+                    toggleObstacle,
+                    particles,
+                    psoIter,
+                    psoBestFitness,
+                    stepPso,
+                    runPso,
+                    resetPso,
+                    qlGrid,
+                    qlEpisode,
+                    qlStep,
+                    qlEpsilon,
+                    qlTotalReward,
+                    stepQl,
+                    runQl,
+                    resetQl
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
